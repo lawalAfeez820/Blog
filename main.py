@@ -18,6 +18,8 @@ from mail import send_email
 
 
 app = CreateApp()
+with app.app_context():
+    db.create_all()
 
 year = datetime.now().year
 
@@ -46,7 +48,7 @@ def register():
 
     if form.validate_on_submit():
         user = {
-            "email": form.email.data,
+            "email": form.email.data.lower(),
             "name": form.name.data,
             "password": generate_password_hash(password = form.password.data, method='pbkdf2:sha256',
             salt_length=8)
@@ -75,7 +77,7 @@ def login():
     form = Login()
 
     if form.validate_on_submit():
-        user = db.session.execute(db.select(CreateUser).filter_by(email = form.email.data)).scalars().first()
+        user = db.session.execute(db.select(CreateUser).filter_by(email = form.email.data.lower())).scalars().first()
         if user:
         
             if check_password_hash(user.password, form.password.data):
@@ -83,6 +85,10 @@ def login():
                 
                 
                 return redirect(url_for("get_all_posts"))
+            flash("Incorect Password")
+            return redirect(url_for('login'))
+        flash("You do not have account here, please register")
+        return redirect(url_for('register'))
 
     return render_template("login.html", form = form, user =current_user, date = year)
 
@@ -190,8 +196,8 @@ def delete_post(post_id):
 # def register():
 #     return render_template("register.html")
 
-
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(host='0.0.0.0', port=5000, debug= True)
+    app.run(debug = True, port= 5000)
+
+    
+    
